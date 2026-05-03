@@ -1,0 +1,9 @@
+subject,from,body_text,urls,label
+"Verify your account","support@paypa1.com","Your account will be closed. Verify now.","http://paypa1-login.click",1
+"Password expiry warning","admin@micr0soft.com","Your password expires today. Login immediately.","http://micr0soft-security.zip",1
+"Class timetable update","college@griistu.edu","Your updated timetable is attached.","",0
+"Assignment reminder","teacher@griistu.edu","Submit your assignment before Friday.","",0
+"Bank alert urgent","security@bank-alert.com","Your card is blocked. Click to reactivate.","http://192.168.1.1/login",1
+"Workshop invitation","events@college.edu","You are invited to a cybersecurity workshop.","",0
+"Invoice payment failed","billing@amaz0n.com","Your invoice payment failed. Update payment now.","http://amaz0n-billing.click",1
+"Library notice","library@college.edu","Your issued book return date is tomorrow.","",0
