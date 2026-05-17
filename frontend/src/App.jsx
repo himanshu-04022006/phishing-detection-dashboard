@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffeccd frontend, useState } from "react";
 import axios from "axios";
 
 function App() {
