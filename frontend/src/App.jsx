@@ -44,9 +44,8 @@ function App() {
     result?.prediction || result?.label || result?.result || "Unknown";
 
   const isPhishing =
-    predictionText.toLowerCase().includes("phishing") ||
-    predictionText.toLowerCase().includes("malicious");
-
+     String(predictionText).toLowerCase().includes("phishing") ||
+     String(predictionText).toLowerCase().includes("malicious");
   return (
     <div style={styles.page}>
       <div style={styles.backgroundGlow}></div>
