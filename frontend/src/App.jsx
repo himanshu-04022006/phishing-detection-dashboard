@@ -7,16 +7,31 @@ function App() {
   const [sender, setSender] = useState("");
   const [url, setUrl] = useState("");
   const [result, setResult] = useState(null);
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    total_scans: 0,
+    phishing_detected: 0,
+    safe_emails: 0,
+  });
   const [loading, setLoading] = useState(false);
 
   const API_BASE_URL = "https://phishing-detection-dashboard.onrender.com";
 
+  const loadStats = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/stats`);
+      setStats({
+        total_scans: res.data.total_scans ?? res.data.total ?? 0,
+        phishing_detected:
+          res.data.phishing_detected ?? res.data.phishing ?? 0,
+        safe_emails: res.data.safe_emails ?? res.data.safe ?? 0,
+      });
+    } catch (err) {
+      console.error("Stats Error:", err);
+    }
+  };
+
   useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/stats`)
-      .then((res) => setStats(res.data))
-      .catch((err) => console.error("Stats Error:", err));
+    loadStats();
   }, []);
 
   const scanEmail = async () => {
@@ -25,60 +40,194 @@ function App() {
 
     try {
       const response = await axios.post(`${API_BASE_URL}/predict`, {
-  subject: subject,
-  body_text: body,
-  from_addr: sender,
-  urls: url,
-});
+        subject: subject,
+        body_text: body,
+        from_addr: sender,
+        urls: url,
+      });
 
       setResult(response.data);
+      await loadStats();
     } catch (error) {
       console.error("Prediction Error:", error);
       alert("Backend connection failed. Please check Render backend URL.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  const predictionText =
-    result?.prediction || result?.label || result?.result || "Unknown";
+  const predictionValue =
+    result?.prediction ?? result?.label ?? result?.result ?? "Unknown";
 
   const isPhishing =
-     String(predictionText).toLowerCase().includes("phishing") ||
-     String(predictionText).toLowerCase().includes("malicious");
+    result?.prediction === 1 ||
+    result?.label === 1 ||
+    String(result?.result || "").toLowerCase().includes("phishing") ||
+    String(result?.result || "").toLowerCase().includes("malicious");
+
+  const confidence = Number(result?.score ?? result?.confidence ?? 0);
+
+  const styles = {
+    page: {
+      minHeight: "100vh",
+      background:
+        "radial-gradient(circle at top right, #162447, #070b18 45%, #020617)",
+      color: "#ffffff",
+      fontFamily: "Inter, Arial, sans-serif",
+      padding: "24px",
+    },
+    nav: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: "40px",
+    },
+    logo: { fontSize: "26px", fontWeight: "800", color: "#4da3ff" },
+    badge: {
+      border: "1px solid #22c55e",
+      color: "#22c55e",
+      padding: "8px 18px",
+      borderRadius: "999px",
+      fontWeight: "700",
+      background: "rgba(34,197,94,0.1)",
+    },
+    hero: {
+      display: "grid",
+      gridTemplateColumns: "1.3fr 1fr",
+      gap: "28px",
+      marginBottom: "28px",
+    },
+    h1: {
+      fontSize: "42px",
+      lineHeight: "1.1",
+      marginBottom: "18px",
+    },
+    p: {
+      color: "#cbd5e1",
+      fontSize: "16px",
+      lineHeight: "1.7",
+    },
+    card: {
+      background: "rgba(15,23,42,0.86)",
+      border: "1px solid rgba(148,163,184,0.25)",
+      borderRadius: "22px",
+      padding: "28px",
+      boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+    },
+    active: {
+      fontSize: "38px",
+      color: "#22c55e",
+      margin: "10px 0",
+    },
+    grid: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: "28px",
+      marginBottom: "28px",
+    },
+    input: {
+      width: "100%",
+      padding: "16px",
+      marginBottom: "16px",
+      borderRadius: "14px",
+      border: "1px solid rgba(148,163,184,0.3)",
+      background: "#020617",
+      color: "#ffffff",
+      fontSize: "15px",
+      boxSizing: "border-box",
+    },
+    textarea: {
+      width: "100%",
+      height: "140px",
+      padding: "16px",
+      marginBottom: "16px",
+      borderRadius: "14px",
+      border: "1px solid rgba(148,163,184,0.3)",
+      background: "#020617",
+      color: "#ffffff",
+      fontSize: "15px",
+      resize: "vertical",
+      boxSizing: "border-box",
+    },
+    button: {
+      width: "100%",
+      padding: "17px",
+      border: "none",
+      borderRadius: "14px",
+      background: "linear-gradient(90deg, #2563eb, #9333ea)",
+      color: "white",
+      fontSize: "17px",
+      fontWeight: "800",
+      cursor: "pointer",
+    },
+    resultBox: {
+      border: `1px solid ${isPhishing ? "#ef4444" : "#22c55e"}`,
+      boxShadow: `0 0 35px ${
+        isPhishing ? "rgba(239,68,68,0.25)" : "rgba(34,197,94,0.25)"
+      }`,
+      borderRadius: "22px",
+      padding: "28px",
+      background: "#020617",
+    },
+    pill: {
+      display: "inline-block",
+      padding: "8px 18px",
+      borderRadius: "999px",
+      background: isPhishing
+        ? "rgba(239,68,68,0.25)"
+        : "rgba(34,197,94,0.25)",
+      color: isPhishing ? "#f87171" : "#4ade80",
+      fontWeight: "800",
+      marginBottom: "20px",
+    },
+    analyticsGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(3, 1fr)",
+      gap: "18px",
+    },
+    statNumber: {
+      fontSize: "34px",
+      color: "#60a5fa",
+      margin: "8px 0",
+    },
+    footer: {
+      textAlign: "center",
+      color: "#64748b",
+      marginTop: "26px",
+    },
+  };
+
   return (
     <div style={styles.page}>
-      <div style={styles.backgroundGlow}></div>
-
-      <nav style={styles.navbar}>
+      <nav style={styles.nav}>
         <div>
-          <h1 style={styles.logo}>PhishGuard AI</h1>
-          <p style={styles.subtitle}>AI-Powered Phishing Detection Dashboard</p>
+          <div style={styles.logo}>PhishGuard AI</div>
+          <div style={{ color: "#94a3b8" }}>
+            AI-Powered Phishing Detection Dashboard
+          </div>
         </div>
-        <div style={styles.statusBadge}>● Live Security Scanner</div>
+        <div style={styles.badge}>● Live Security Scanner</div>
       </nav>
 
       <section style={styles.hero}>
         <div>
-          <h2 style={styles.heroTitle}>
-            Detect Suspicious Emails Before They Attack
-          </h2>
-          <p style={styles.heroText}>
+          <h1 style={styles.h1}>Detect Suspicious Emails Before They Attack</h1>
+          <p style={styles.p}>
             Analyze email subject, body, sender, and suspicious links using a
             machine-learning powered phishing detection system.
           </p>
         </div>
 
-        <div style={styles.threatCard}>
-          <p style={styles.threatLabel}>Threat Engine</p>
-          <h3 style={styles.threatScore}>Active</h3>
-          <p style={styles.safeText}>Backend connected via Render API</p>
+        <div style={styles.card}>
+          <p style={{ color: "#93c5fd" }}>Threat Engine</p>
+          <h2 style={styles.active}>Active</h2>
+          <p style={styles.p}>Backend connected via Render API</p>
         </div>
       </section>
 
-      <main style={styles.grid}>
+      <section style={styles.grid}>
         <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Scan Email</h2>
+          <h2>Scan Email</h2>
 
           <input
             style={styles.input}
@@ -114,83 +263,56 @@ function App() {
         </div>
 
         <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Detection Result</h2>
+          <h2>Detection Result</h2>
 
-          {!result && !loading && (
-            <div style={styles.emptyBox}>
-              <p>No scan result yet.</p>
-              <span>Submit an email to analyze phishing risk.</span>
-            </div>
-          )}
-
-          {loading && (
-            <div style={styles.scannerBox}>
-              <div style={styles.loader}></div>
-              <p>Analyzing indicators...</p>
-            </div>
-          )}
-
-          {result && (
+          {!result ? (
             <div
               style={{
-                ...styles.resultBox,
-                borderColor: isPhishing ? "#ef4444" : "#22c55e",
-                boxShadow: isPhishing
-                  ? "0 0 25px rgba(239,68,68,0.35)"
-                  : "0 0 25px rgba(34,197,94,0.35)",
+                border: "1px dashed rgba(148,163,184,0.4)",
+                borderRadius: "18px",
+                padding: "40px",
+                textAlign: "center",
+                color: "#94a3b8",
               }}
             >
-              <div
-                style={{
-                  ...styles.riskBadge,
-                  background: isPhishing ? "#7f1d1d" : "#14532d",
-                  color: isPhishing ? "#fecaca" : "#bbf7d0",
-                }}
-              >
-                {isPhishing ? "High Risk" : "Safe"}
-              </div>
+              <p>No scan result yet.</p>
+              <p>Submit an email to analyze phishing risk.</p>
+            </div>
+          ) : (
+            <div style={styles.resultBox}>
+              <span style={styles.pill}>{isPhishing ? "Phishing" : "Safe"}</span>
 
-              <h3 style={styles.prediction}>
-                {isPhishing ? "Phishing Detected" : "Email Looks Safe"}
-              </h3>
+              <h1>{isPhishing ? "Phishing Email Detected" : "Email Looks Safe"}</h1>
 
-              <p>
-                <strong>Prediction:</strong> {predictionText}
-              </p>
-
-              <p>
-                <strong>Confidence:</strong>{" "}
-                {result?.confidence || result?.score || "N/A"}
-              </p>
-
-              <p>
-                <strong>Risk Level:</strong>{" "}
-                {result?.risk_level || (isPhishing ? "High" : "Low")}
-              </p>
+              <h3>Prediction: {String(predictionValue)}</h3>
+              <h3>Confidence: {confidence.toFixed(4)}</h3>
+              <h3>Risk Level: {isPhishing ? "High" : "Low"}</h3>
             </div>
           )}
         </div>
-      </main>
+      </section>
 
-      <section style={styles.analytics}>
-        <h2 style={styles.cardTitle}>Threat Analytics</h2>
+      <section style={styles.card}>
+        <h2>Threat Analytics</h2>
 
-        <div style={styles.statsGrid}>
-          <StatCard
-            title="Total Scans"
-            value={stats?.total_scans ?? "0"}
-            label="Emails analyzed"
-          />
-          <StatCard
-            title="Phishing Detected"
-            value={stats?.phishing_detected ?? "0"}
-            label="Threats found"
-          />
-          <StatCard
-            title="Safe Emails"
-            value={stats?.safe_emails ?? "0"}
-            label="Clean results"
-          />
+        <div style={styles.analyticsGrid}>
+          <div style={styles.card}>
+            <p>Total Scans</p>
+            <h1 style={styles.statNumber}>{stats.total_scans}</h1>
+            <p style={styles.p}>Emails analyzed</p>
+          </div>
+
+          <div style={styles.card}>
+            <p>Phishing Detected</p>
+            <h1 style={styles.statNumber}>{stats.phishing_detected}</h1>
+            <p style={styles.p}>Threats found</p>
+          </div>
+
+          <div style={styles.card}>
+            <p>Safe Emails</p>
+            <h1 style={styles.statNumber}>{stats.safe_emails}</h1>
+            <p style={styles.p}>Clean results</p>
+          </div>
         </div>
       </section>
 
@@ -200,236 +322,5 @@ function App() {
     </div>
   );
 }
-
-function StatCard({ title, value, label }) {
-  return (
-    <div style={styles.statCard}>
-      <p style={styles.statTitle}>{title}</p>
-      <h3 style={styles.statValue}>{value}</h3>
-      <span style={styles.statLabel}>{label}</span>
-    </div>
-  );
-}
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #020617, #0f172a, #111827)",
-    color: "#e5e7eb",
-    fontFamily: "Inter, Arial, sans-serif",
-    padding: "28px",
-    position: "relative",
-    overflow: "hidden",
-  },
-  backgroundGlow: {
-    position: "absolute",
-    width: "420px",
-    height: "420px",
-    background: "rgba(37, 99, 235, 0.18)",
-    borderRadius: "50%",
-    filter: "blur(90px)",
-    top: "-120px",
-    right: "-100px",
-    zIndex: 0,
-  },
-  navbar: {
-    position: "relative",
-    zIndex: 1,
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "45px",
-  },
-  logo: {
-    margin: 0,
-    fontSize: "32px",
-    color: "#60a5fa",
-  },
-  subtitle: {
-    margin: "6px 0 0",
-    color: "#94a3b8",
-  },
-  statusBadge: {
-    padding: "10px 16px",
-    border: "1px solid #22c55e",
-    borderRadius: "999px",
-    color: "#86efac",
-    background: "rgba(34, 197, 94, 0.08)",
-    fontWeight: "bold",
-  },
-  hero: {
-    position: "relative",
-    zIndex: 1,
-    display: "grid",
-    gridTemplateColumns: "2fr 1fr",
-    gap: "24px",
-    marginBottom: "28px",
-  },
-  heroTitle: {
-    fontSize: "44px",
-    lineHeight: "1.1",
-    margin: "0 0 16px",
-  },
-  heroText: {
-    maxWidth: "750px",
-    color: "#cbd5e1",
-    fontSize: "17px",
-    lineHeight: "1.7",
-  },
-  threatCard: {
-    background: "rgba(15, 23, 42, 0.75)",
-    border: "1px solid rgba(96, 165, 250, 0.35)",
-    borderRadius: "22px",
-    padding: "24px",
-    boxShadow: "0 0 35px rgba(59,130,246,0.18)",
-  },
-  threatLabel: {
-    color: "#93c5fd",
-    margin: 0,
-  },
-  threatScore: {
-    fontSize: "38px",
-    margin: "10px 0",
-    color: "#22c55e",
-  },
-  safeText: {
-    color: "#94a3b8",
-  },
-  grid: {
-    position: "relative",
-    zIndex: 1,
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "24px",
-  },
-  card: {
-    background: "rgba(15, 23, 42, 0.78)",
-    border: "1px solid rgba(148, 163, 184, 0.25)",
-    borderRadius: "22px",
-    padding: "24px",
-    backdropFilter: "blur(14px)",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-  },
-  cardTitle: {
-    marginTop: 0,
-    color: "#f8fafc",
-  },
-  input: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "14px",
-    marginTop: "14px",
-    borderRadius: "12px",
-    border: "1px solid #334155",
-    background: "#020617",
-    color: "#e5e7eb",
-    fontSize: "15px",
-    outline: "none",
-  },
-  textarea: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "14px",
-    marginTop: "14px",
-    minHeight: "150px",
-    borderRadius: "12px",
-    border: "1px solid #334155",
-    background: "#020617",
-    color: "#e5e7eb",
-    fontSize: "15px",
-    resize: "vertical",
-    outline: "none",
-  },
-  button: {
-    width: "100%",
-    marginTop: "18px",
-    padding: "15px",
-    border: "none",
-    borderRadius: "14px",
-    color: "white",
-    background: "linear-gradient(90deg, #2563eb, #7c3aed)",
-    fontSize: "17px",
-    fontWeight: "bold",
-    cursor: "pointer",
-    boxShadow: "0 0 25px rgba(37,99,235,0.35)",
-  },
-  emptyBox: {
-    border: "1px dashed #475569",
-    borderRadius: "16px",
-    padding: "30px",
-    textAlign: "center",
-    color: "#94a3b8",
-  },
-  scannerBox: {
-    textAlign: "center",
-    padding: "40px",
-    color: "#93c5fd",
-  },
-  loader: {
-    width: "48px",
-    height: "48px",
-    border: "4px solid #1e293b",
-    borderTop: "4px solid #38bdf8",
-    borderRadius: "50%",
-    margin: "0 auto 18px",
-    animation: "spin 1s linear infinite",
-  },
-  resultBox: {
-    border: "1px solid",
-    borderRadius: "18px",
-    padding: "24px",
-    background: "rgba(2, 6, 23, 0.85)",
-  },
-  riskBadge: {
-    display: "inline-block",
-    padding: "8px 14px",
-    borderRadius: "999px",
-    fontWeight: "bold",
-    marginBottom: "14px",
-  },
-  prediction: {
-    fontSize: "28px",
-    margin: "5px 0 18px",
-  },
-  analytics: {
-    position: "relative",
-    zIndex: 1,
-    marginTop: "24px",
-    background: "rgba(15, 23, 42, 0.78)",
-    border: "1px solid rgba(148, 163, 184, 0.25)",
-    borderRadius: "22px",
-    padding: "24px",
-  },
-  statsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "18px",
-  },
-  statCard: {
-    background: "#020617",
-    border: "1px solid #1e293b",
-    borderRadius: "18px",
-    padding: "20px",
-  },
-  statTitle: {
-    color: "#94a3b8",
-    margin: 0,
-  },
-  statValue: {
-    fontSize: "34px",
-    color: "#60a5fa",
-    margin: "10px 0",
-  },
-  statLabel: {
-    color: "#64748b",
-  },
-  footer: {
-    position: "relative",
-    zIndex: 1,
-    textAlign: "center",
-    marginTop: "30px",
-    color: "#64748b",
-  },
-};
 
 export default App;
