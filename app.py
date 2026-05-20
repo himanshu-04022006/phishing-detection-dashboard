@@ -24,17 +24,21 @@ model = bundle["model"]
 tfidf = bundle["tfidf"]
 
 db = sqlite3.connect("events.db", check_same_thread=False)
+cursor = db.cursor()
 
-db.execute("""
-CREATE TABLE IF NOT EXISTS events (
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS scans (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ts DATETIME DEFAULT CURRENT_TIMESTAMP,
-    sender TEXT,
     subject TEXT,
+    body_text TEXT,
+    from_addr TEXT,
+    urls TEXT,
     score REAL,
     label INTEGER
 )
 """)
+db.commit()
+
 
 class Mail(BaseModel):
     subject: str
@@ -42,9 +46,32 @@ class Mail(BaseModel):
     from_addr: str = ""
     urls: str = ""
 
+
+@app.get("/")
+def home():
+    return {"message": "Phishing Detection API is running"}
+
+
+@app.get("/stats")
+def stats():
+    cursor.execute("SELECT COUNT(*) FROM scans")
+    total = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM scans WHERE label = 1")
+    phishing = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM scans WHERE label = 0")
+    safe = cursor.fetchone()[0]
+
+    return {
+        "total_scans": total,
+        "phishing_detected": phishing,
+        "safe_emails": safe
+    }
+
+
 @app.post("/predict")
 def predict(mail: Mail):
-
     text = mail.subject + " " + mail.body_text
 
     X_text = tfidf.transform([text]).toarray()
@@ -56,72 +83,27 @@ def predict(mail: Mail):
     X = np.hstack([X_text, X_url])
 
     score = float(model.predict_proba(X)[0][1])
-
     label = int(score >= 0.5)
 
-    db.execute(
-        "INSERT INTO events(sender, subject, score, label) VALUES (?, ?, ?, ?)",
-        (mail.from_addr, mail.subject, score, label)
+    cursor.execute(
+        """
+        INSERT INTO scans 
+        (subject, body_text, from_addr, urls, score, label)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            mail.subject,
+            mail.body_text,
+            mail.from_addr,
+            mail.urls,
+            score,
+            label
+        )
     )
-
     db.commit()
 
-    signals = []
-
-    if label == 1:
-        signals.append("Suspicious phishing pattern detected.")
-
-    if "urgent" in text.lower():
-        signals.append("Urgent language detected.")
-
-    if "verify" in text.lower():
-        signals.append("Verification keyword detected.")
-
-    if mail.urls:
-        signals.append("Email contains URLs.")
-
     return {
-        "phish_score": round(score, 3),
-        "label": "Phishing" if label == 1 else "Safe",
-        "signals": signals
+        "label": label,
+        "result": "Phishing" if label == 1 else "Safe",
+        "score": score
     }
-
-@app.get("/stats")
-def stats():
-
-    cur = db.cursor()
-
-    cur.execute("SELECT COUNT(*) FROM events")
-    total = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM events WHERE label = 1")
-    high = cur.fetchone()[0]
-
-    cur.execute("""
-        SELECT sender, subject, score, label, ts
-        FROM events
-        ORDER BY id DESC
-        LIMIT 10
-    """)
-
-    rows = cur.fetchall()
-
-    alerts = [
-        {
-            "sender": r[0],
-            "subject": r[1],
-            "score": round(r[2], 3),
-            "label": "Phishing" if r[3] == 1 else "Safe",
-            "time": r[4]
-        }
-        for r in rows
-    ]
-
-    return {
-        "total_scanned": total,
-        "high_risk": high,
-        "alerts": alerts,
-        "lesson": "Always hover over links before clicking."
-    }
-if __name__ == "__main__":
-    app.run(debug=True, port=5000)
