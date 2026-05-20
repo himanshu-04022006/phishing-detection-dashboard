@@ -9,7 +9,12 @@ function App() {
   const [url, setUrl] = useState("");
 
   const [result, setResult] = useState(null);
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    total_scans: 0,
+    phishing_detected: 0,
+    safe_emails: 0,
+  });
+
   const [loading, setLoading] = useState(false);
 
   const API_BASE_URL =
@@ -43,14 +48,11 @@ function App() {
 
       setResult(response.data);
 
-      axios
-        .get(`${API_BASE_URL}/stats`)
-        .then((res) => {
-          setStats(res.data);
-        })
-        .catch((err) => {
-          console.error("Stats Refresh Error:", err);
-        });
+      const updatedStats = await axios.get(
+        `${API_BASE_URL}/stats`
+      );
+
+      setStats(updatedStats.data);
 
     } catch (error) {
       console.error("Prediction Error:", error);
@@ -64,15 +66,17 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      <div className="hero">
+    <div className="container">
+      <div className="hero-section">
         <div className="hero-left">
-          <h1>Detect Suspicious Emails Before They Attack</h1>
+          <h1>
+            Detect Suspicious Emails Before They Attack
+          </h1>
 
           <p>
-            Analyze email subject, body, sender, and suspicious
-            links using a machine-learning powered phishing
-            detection system.
+            Analyze email subject, body, sender, and
+            suspicious links using a machine-learning
+            powered phishing detection system.
           </p>
         </div>
 
@@ -80,14 +84,18 @@ function App() {
           <div className="status-card">
             <h2>Threat Engine</h2>
 
-            <h1 className="active">Active</h1>
+            <h1 className="active-status">
+              Active
+            </h1>
 
-            <p>Backend connected via Render API</p>
+            <p>
+              Backend connected via Render API
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="main-grid">
+      <div className="scan-section">
         <div className="scan-card">
           <h2>Scan Email</h2>
 
@@ -95,31 +103,44 @@ function App() {
             type="text"
             placeholder="Email Subject"
             value={subject}
-            onChange={(e) => setSubject(e.target.value)}
+            onChange={(e) =>
+              setSubject(e.target.value)
+            }
           />
 
           <textarea
             placeholder="Paste email body/message here..."
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={(e) =>
+              setBody(e.target.value)
+            }
           />
 
           <input
             type="text"
             placeholder="Sender Email"
             value={sender}
-            onChange={(e) => setSender(e.target.value)}
+            onChange={(e) =>
+              setSender(e.target.value)
+            }
           />
 
           <input
             type="text"
             placeholder="Suspicious URL"
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={(e) =>
+              setUrl(e.target.value)
+            }
           />
 
-          <button onClick={scanEmail} disabled={loading}>
-            {loading ? "Scanning Threat..." : "Scan Email"}
+          <button
+            onClick={scanEmail}
+            disabled={loading}
+          >
+            {loading
+              ? "Scanning Threat..."
+              : "Scan Email"}
           </button>
         </div>
 
@@ -127,16 +148,20 @@ function App() {
           <h2>Detection Result</h2>
 
           {!result ? (
-            <div className="empty-result">
+            <div className="empty-state">
               <p>No scan result yet.</p>
-              <p>Submit an email to analyze phishing risk.</p>
+
+              <p>
+                Submit an email to analyze
+                phishing risk.
+              </p>
             </div>
           ) : (
             <div className="result-box">
               <h1
                 className={
                   result.label === 1
-                    ? "phishing"
+                    ? "danger"
                     : "safe"
                 }
               >
@@ -145,23 +170,24 @@ function App() {
 
               <p>
                 Confidence Score:{" "}
-                {(result.score * 100).toFixed(2)}%
+                {(result.score * 100).toFixed(
+                  2
+                )}
+                %
               </p>
             </div>
           )}
         </div>
       </div>
 
-      <div className="analytics">
+      <div className="analytics-section">
         <h2>Threat Analytics</h2>
 
         <div className="analytics-grid">
           <div className="analytics-card">
             <h3>Total Scans</h3>
 
-            <h1>
-              {stats ? stats.total_scans : 0}
-            </h1>
+            <h1>{stats.total_scans}</h1>
 
             <p>Emails analyzed</p>
           </div>
@@ -170,7 +196,7 @@ function App() {
             <h3>Phishing Detected</h3>
 
             <h1>
-              {stats ? stats.phishing_detected : 0}
+              {stats.phishing_detected}
             </h1>
 
             <p>Threats found</p>
@@ -179,9 +205,7 @@ function App() {
           <div className="analytics-card">
             <h3>Safe Emails</h3>
 
-            <h1>
-              {stats ? stats.safe_emails : 0}
-            </h1>
+            <h1>{stats.safe_emails}</h1>
 
             <p>Clean results</p>
           </div>
