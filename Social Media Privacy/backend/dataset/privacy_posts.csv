@@ -1,0 +1,21 @@
+text,label
+"My phone number is 9876543210",risky
+"Contact me at himanshu@gmail.com",risky
+"My date of birth is 04/02/2006",risky
+"I live near MG Road Pune",risky
+"I leave hostel every day at 7 AM",risky
+"My home is near the college gate",risky
+"Follow me at @cyber_peter",risky
+"I study at GH Raisoni University",risky
+"I usually return home around 8 PM",risky
+"My flat is in sector 5",risky
+"I enjoy reading books",safe
+"I love cybersecurity",safe
+"Today I learned Python",safe
+"I like playing cricket",safe
+"My favorite color is blue",safe
+"Watching a movie tonight",safe
+"Learning FastAPI is fun",safe
+"I enjoy solving problems",safe
+"Working on my college project",safe
+"Good morning everyone",safe
